@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://assets.zendesk.com/apps/sdk-assets/css/2/zendesk_garden.css" type="text/css">
+  <style>
+    .banner {
+      display: none;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      animation: pulse 2s infinite;
+    }
+
+    /* Label-specific banner styles */
+    .banner.premium_support {
+      background: linear-gradient(45deg, #2196F3, #42A5F5);
+      color: white;
+    }
+
+    .banner.custom_support {
+      background: linear-gradient(45deg, #FFC107, #FFD54F);
+      color: #333;
+    }
+
+    .banner.escalated_account {
+      background: linear-gradient(45deg, #F44336, #EF5350);
+      color: white;
+    }
+
+    .banner.important_account {
+      background: linear-gradient(45deg, #4CAF50, #66BB6A);
+      color: white;
+    }
+
+    .banner.renewal_alert {
+      background: linear-gradient(45deg, #FF9800, #FFA726);
+      color: white;
+    }
+
+    .banner.closed_environment {
+      background: linear-gradient(45deg, #607D8B, #78909C);
+      color: white;
+    }
+
+    .banner-icon {
+      font-size: 24px;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+
+    .banner-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .banner-text {
+      font-weight: bold;
+      font-size: 16px;
+      margin: 10px 0;
+    }
+
+    .banner-details {
+      font-size: 14px;
+      margin: 10px 0;
+      padding: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      width: 100%;
+    }
+
+    .banner-actions {
+      margin-top: 15px;
+      width: 100%;
+    }
+
+    .banner-button {
+      background: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+      margin: 5px 0;
+      transition: background 0.3s ease;
+    }
+
+    .banner-button:hover {
+      background: #f0f0f0;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div id="banner" class="banner">
+    <div class="banner-content">
+      <div>
+        <span id="banner-icon" class="banner-icon">⭐</span>
+        <span id="banner-text" class="banner-text"></span>
+      </div>
+      <div id="banner-details" class="banner-details"></div>
+      <div class="banner-actions">
+        <button class="banner-button" onclick="showNotification()">Show Reminder</button>
+        <button class="banner-button" onclick="copyInfo()">Copy Info</button>
+      </div>
+    </div>
+  </div>
+  
+  <script src="https://static.zdassets.com/zendesk_app_framework_sdk/2.0/zaf_sdk.min.js"></script>
+  <script>
+    const client = ZAFClient.init();
+
+    // Label configuration mapping
+    const labelConfigs = {
+      escalated_account: {
+        priority: 1, // Highest priority
+        bannerText: "Escalated Account: Immediate attention required. Coordinate with senior staff as necessary.",
+        notificationText: "Escalated account detected. Assign to priority team.",
+        icon: "🔔",
+        details: ["Immediate Action Required", "Senior Staff Review Needed"],
+        style: "escalated_account"
+      },
+      premium_support: {
+        priority: 2,
+        bannerText: "This is a Premium Support Customer. Ensure priority service and 24/7 availability.",
+        notificationText: "A Premium Support Customer's ticket has been created. Ensure expedited handling.",
+        icon: "⭐",
+        details: ["Priority: High", "24/7 Support Required"],
+        style: "premium_support"
+      },
+      important_account: {
+        priority: 3,
+        bannerText: "Important Account: High-value customer. Ensure exceptional service.",
+        notificationText: "Important account ticket created. Prioritize this case.",
+        icon: "💎",
+        details: ["High-Value Customer", "Priority Service Required"],
+        style: "important_account"
+      },
+      custom_support: {
+        priority: 4,
+        bannerText: "Custom Support Required: This case demands tailored solutions. Proceed accordingly.",
+        notificationText: "Custom support ticket logged. Please review for unique handling requirements.",
+        icon: "⚠️",
+        details: ["Custom Handling Required", "Review Special Instructions"],
+        style: "custom_support"
+      },
+      renewal_alert: {
+        priority: 5,
+        bannerText: "Renewal Alert: This account's renewal is upcoming. Proactive follow-up needed.",
+        notificationText: "Renewal alert: Account renewal date is approaching. Take necessary actions.",
+        icon: "🕒",
+        details: ["Renewal Pending", "Proactive Follow-up Required"],
+        style: "renewal_alert"
+      },
+      closed_environment: {
+        priority: 2, // High priority, just below escalated_account
+        bannerText: "Closed Environment: This organization has access limitations.",
+        notificationText: "Warning: This is a closed environment organization with restricted access.",
+        icon: "🔒",
+        details: [
+          "Access Restrictions Apply",
+          "Limited External Communications",
+          "Follow Security Protocols"
+        ],
+        style: "closed_environment"
+      }
+    };
+
+    function resizeApp() {
+      const height = document.body.scrollHeight;
+      client.invoke('resize', { height: height + 50 });
+    }
+
+    function showNotification(messages) {
+      if (Array.isArray(messages)) {
+        messages.forEach((message, index) => {
+          // Stagger notifications by 1 second each
+          setTimeout(() => {
+            client.invoke('notify', message, 'warning', 30000);
+          }, index * 1000);
+        });
+      } else {
+        client.invoke('notify', messages || currentNotification, 'warning', 30000);
+      }
+    }
+
+    let currentNotification = '';
+    let currentLabels = [];
+
+    async function copyInfo() {
+      try {
+        const ticketData = await client.get(['ticket.tags', 'ticket.organization']);
+        const org = ticketData['ticket.organization'];
+        
+        const info = [
+          `Organization: ${org ? org.name : 'N/A'}`,
+          `ID: ${org ? org.id : 'N/A'}`,
+          '\nActive Labels:'
+        ];
+
+        // Add information for all active labels
+        currentLabels.forEach(label => {
+          const config = labelConfigs[label];
+          info.push(`\n[${config.icon} ${label.toUpperCase()}]`);
+          config.details.forEach(detail => info.push(`- ${detail}`));
+        });
+        
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(info.join('\n'));
+          client.invoke('notify', 'Information copied to clipboard', 'notice', 3000);
+        }
+      } catch (error) {
+        client.invoke('notify', 'Error copying information', 'error', 3000);
+      }
+    }
+
+    function updateBanner(labels) {
+      if (!labels || labels.length === 0) {
+        document.getElementById('banner').style.display = 'none';
+        currentLabels = [];
+        return false;
+      }
+
+      // Sort labels by priority
+      const sortedLabels = labels.sort((a, b) => 
+        (labelConfigs[a].priority || 999) - (labelConfigs[b].priority || 999)
+      );
+
+      const primaryLabel = sortedLabels[0];
+      const primaryConfig = labelConfigs[primaryLabel];
+      
+      if (!primaryConfig) return false;
+
+      const banner = document.getElementById('banner');
+      const bannerText = document.getElementById('banner-text');
+      const bannerIcon = document.getElementById('banner-icon');
+      const bannerDetails = document.getElementById('banner-details');
+
+      // Remove all existing label classes
+      banner.className = 'banner';
+      // Add primary label class
+      banner.classList.add(primaryConfig.style);
+      
+      // Update banner text with primary label
+      bannerText.textContent = primaryConfig.bannerText;
+      bannerIcon.textContent = primaryConfig.icon;
+
+      // Combine details from all active labels
+      const allDetails = sortedLabels.flatMap(label => {
+        const config = labelConfigs[label];
+        return [`[${config.icon} ${label.toUpperCase()}]`, ...config.details];
+      });
+
+      bannerDetails.innerHTML = allDetails.map(detail => `<div>${detail}</div>`).join('');
+      
+      banner.style.display = 'block';
+      currentLabels = sortedLabels;
+      
+      // Return all notifications, sorted by priority
+      return sortedLabels.map(label => labelConfigs[label].notificationText);
+    }
+
+    async function checkTicketLabels() {
+      try {
+        const data = await client.get('ticket.tags');
+        const tags = data['ticket.tags'];
+        
+        // Find all matching labels
+        const matchingLabels = tags.filter(tag => labelConfigs[tag]);
+        
+        if (matchingLabels.length > 0) {
+          const notifications = updateBanner(matchingLabels);
+          if (notifications) {
+            showNotification(notifications);
+          }
+        } else {
+          updateBanner([]);
+        }
+        
+        resizeApp();
+      } catch (error) {
+        console.error('Error checking tags:', error);
+      }
+    }
+
+    // Initial check
+    checkTicketLabels();
+
+    // Listen for tag changes
+    client.on('ticket.tags.changed', checkTicketLabels);
+
+    window.addEventListener('resize', resizeApp);
+  </script>
+</body>
+</html>

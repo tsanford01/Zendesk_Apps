@@ -1,0 +1,8 @@
+{
+  "app": {
+    "name": "Organization Banner",
+    "short_description": "Displays a banner for specific organizations",
+    "long_description": "This app shows a banner when viewing tickets from specific organizations",
+    "installation_instructions": "Simply install the app and configure the organization IDs in the iframe.html file"
+  }
+}
