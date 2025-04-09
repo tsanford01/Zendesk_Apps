@@ -12,6 +12,14 @@ This Zendesk application enhances the support experience by displaying customize
 - Supports multiple organizations
 - Localization support through translations
 - Clean and responsive interface
+- Special handling indicators for:
+  - Premium Support customers
+  - Escalated accounts
+  - Important accounts
+  - Custom support requirements
+  - Renewal alerts
+  - Closed environments
+  - Legacy DTonomy customers
 
 ## Installation
 
@@ -54,7 +62,7 @@ To modify or enhance this application:
 
 ## Last Updated
 
-January 16, 2025
+April 9, 2025
 
 ## License
 
